@@ -1,0 +1,51 @@
+---
+title: "Exploring_Data"
+output: html_document
+---
+
+```{r}
+library(CASdatasets)
+data("auscathist")
+aus_data = auscathist
+head(aus_data)
+```
+
+```{r}
+summary(aus_data)
+```
+
+```{r}
+colnames(aus_data)
+dim(aus_data)
+```
+
+```{r}
+sapply(aus_data,function(x) sum(is.na(x)))
+```
+
+```{r}
+library(Amelia)
+missmap(aus_data, main = "Missing values vs observed")
+```
+
+```{r}
+aus_data$LastDay = NULL
+n = ncol(aus_data)
+for(i in 1:n){
+  aus_data = subset(aus_data, !is.na(aus_data[,i]))
+}
+dim(aus_data)
+```
+
+```{r}
+library(Amelia)
+missmap(aus_data, main = "Missing values vs observed")
+```
+```{r}
+str(aus_data)
+```
+```{r, eval=FALSE}
+library(DataExplorer)
+DataExplorer::create_report(aus_data)
+```
+
