@@ -1,0 +1,42 @@
+---
+title: "GLM"
+output: html_document
+---
+
+```{r}
+aus_data_states = read.csv2(file.choose(), sep = ",")
+aus_data_states$Quarter = factor(aus_data_states$Quarter)
+aus_data_states$OriginalCost = as.numeric(aus_data_states$OriginalCost)
+```
+
+```{r}
+summary(aus_data_states)
+```
+
+```{r}
+head(aus_data_states)
+```
+
+```{r}
+levels(aus_data_states$Quarter)
+```
+
+
+```{r}
+levels(aus_data_states$State)
+```
+
+
+```{r}
+levels(aus_data_states$Type)
+```
+
+```{r}
+fit = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
+summary(fit)
+```
+
+```{r}
+anova(fit, test="Chisq")
+```
+
