@@ -32,11 +32,55 @@ levels(aus_data_states$Type)
 ```
 
 ```{r}
+library(ggplot2)
+
+
+#ggplot(aus_data_states,aes(x=Year,y=OriginalCost))+geom_col()+scale_x_discrete(breaks = seq(1967,2010,by=3))
+ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
+ggplot(aus_data_states,aes(x=Type,y=OriginalCost))+geom_col()
+ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x=element_text(angle=90))
+```
+
+
+```{r}
 fit = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
 summary(fit)
 ```
 
+Déviance résiduelle inférieure à la déviance nulle, ainsi notre modèle est plus performant que le modèle à 1 seul paramètre (qui correspond à la déviance nulle), donc il a un puvour explicatif
+La déviance résiduelle est inférieure au nombre d'observations.
+
+Intercept : moyenne globale du modèle
+Aucune des classes significative par rapport à la classe de référence
+
 ```{r}
 anova(fit, test="Chisq")
 ```
+ANOVA : pour tester la significativité des variables par rapport au modèle
+Variables Type et Quarter par significatives au seuil de 5%
 
+```{r}
+#183 observations
+#3 variables explicatives
+#nombre de classes : 3+11+8+1=23
+
+qchisq(0.95,183-23)
+```
+Quantile d'une loi du Khi-deux à 183-23 ddl > Residual Deviance => le modèle semble pertinent
+
+On veut maintenant tester un autre type de GLM : le GLM Gaussien
+
+```{r}
+fit_gaussian = glm(formula = OriginalCost ~ Quarter + State + Type, data = aus_data_states, family = gaussian())
+summary(fit_gaussian)
+```
+
+Déviance résiduelle < Déviance nulle => pouvoir explicatf du modèle
+Cependant Déviance résiduelle fortement supérieure au quantile de la loi Khi-deux calculé précédemment (190)
+
+```{r}
+anova(fit_gaussian, test="Chisq")
+```
+
+Comme pour le GLM Gamma les variables Quarter et Type ne sont pas significatives
+Modélisation avec GLM Gaussien avec fonction de lien identité (correspond à une modèle linéaire classique) à rejetter
