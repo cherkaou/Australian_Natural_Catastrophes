@@ -41,11 +41,44 @@ dim(aus_data)
 library(Amelia)
 missmap(aus_data, main = "Missing values vs observed")
 ```
+
+
+```{r}
+summary(aus_data)
+```
+
 ```{r}
 str(aus_data)
 ```
-```{r, eval=FALSE}
-library(DataExplorer)
-DataExplorer::create_report(aus_data)
+
+
+Suppression des lignes ne contenant pas de locations + rajout des states 
+```{r}
+aus_data_states = read.csv2("~/3A/cours/Assurance_Non_Vie/Australian_Natural_Catastrophes/data/aus_data.csv", sep = ",")
+```
+
+
+```{r}
+str(aus_data_states)
+```
+
+```{r}
+aus_data_states$Quarter = factor(aus_data_states$Quarter)
+
+```
+
+```{r}
+aus_data_states$OriginalCost = as.numeric(aus_data_states$OriginalCost)
+```
+
+
+
+
+```{r}
+summary(aus_data_states)
+```
+
+```{r}
+write.csv(aus_data_states, file = "~/3A/cours/Assurance_Non_Vie/Australian_Natural_Catastrophes/data/aus_data_states.csv")
 ```
 
