@@ -10,36 +10,31 @@ aus_data_states$OriginalCost = as.numeric(aus_data_states$OriginalCost)
 ```
 
 ```{r}
+aus_data_states$X = NULL
 summary(aus_data_states)
 ```
 
 ```{r}
-head(aus_data_states)
+tail(aus_data_states)
 ```
+
 
 ```{r}
 levels(aus_data_states$Quarter)
-```
-
-
-```{r}
 levels(aus_data_states$State)
-```
-
-
-```{r}
 levels(aus_data_states$Type)
 ```
 
+
 ```{r}
 library(ggplot2)
-
-
 #ggplot(aus_data_states,aes(x=Year,y=OriginalCost))+geom_col()+scale_x_discrete(breaks = seq(1967,2010,by=3))
 ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
 ggplot(aus_data_states,aes(x=Type,y=OriginalCost))+geom_col()
 ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x=element_text(angle=90))
 ```
+
+
 
 
 ```{r}
@@ -84,3 +79,26 @@ anova(fit_gaussian, test="Chisq")
 
 Comme pour le GLM Gamma les variables Quarter et Type ne sont pas significatives
 Modélisation avec GLM Gaussien avec fonction de lien identité (correspond à une modèle linéaire classique) à rejetter
+
+
+
+#GLM Poisson : 
+
+```{r}
+frequence = aggregate(aus_data_states$Type, by = aus_data_states["Year"], FUN = length)
+colnames(frequence) = c("Year","Frequence per year")
+aus_data = merge(aus_data_states, frequence )
+```
+
+```{r}
+head(aus_data)
+```
+
+```{r}
+fit_poisson = glm(formula = aus_data$`Frequence per year` ~ Quarter + State + Type , data = aus_data, family = poisson )
+summary(fit_poisson)
+```
+```{r}
+anova(fit_poisson, test="Chisq")
+```
+
