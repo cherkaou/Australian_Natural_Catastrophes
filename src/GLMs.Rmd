@@ -94,6 +94,19 @@ aus_data = merge(aus_data_states, frequence )
 head(aus_data)
 ```
 
+
+```{r}
+colnames(aus_data)
+```
+
+```{r}
+library(ggplot2)
+ggplot(aus_data,aes(x=Quarter,y=aus_data$`Frequence per year`))+geom_col()
+ggplot(aus_data,aes(x=Type,y=aus_data$`Frequence per year`))+geom_col()
+ggplot(aus_data,aes(x=State,y=aus_data$`Frequence per year`))+geom_col()+theme(axis.text.x=element_text(angle=90))
+```
+
+
 ```{r}
 fit_poisson = glm(formula = aus_data$`Frequence per year` ~ Quarter + State + Type , data = aus_data, family = poisson )
 summary(fit_poisson)
