@@ -1,0 +1,173 @@
+---
+title: Rapport du projet GLM - Assurance non-vie
+subtitle: Analyse des données de catastrophes naturelles en Australie
+author: Yousra Cherkaoui Tangi - Lou Peltier 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:   
+  bookdown::html_document2:
+    fig_caption: yes
+    number_sections: yes
+    toc: true
+
+header-includes:
+- \usepackage[francais]{babel}
+- \usepackage{float}
+- \usepackage{booktabs}
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center',fig.pos = 'H')
+#position par défaut des figures dans le pdf : centrées et à l'endroit où on les construit
+library(magrittr) #pour utiliser l'opérateur pipe %>%
+options(knitr.table.format = "pandoc") 
+```
+
+# Présentation des données
+
+```{r, include=F}
+library(CASdatasets)
+library(Amelia)
+library(ggplot2)
+library(car)
+data("auscathist")
+aus_data = auscathist
+```
+
+Notre jeu de données est extrait de la librairie *CASdatasets* de R. Il s'agit de *auscathist* qui recense les catastrophes naturelles en Australie à partir de 1967 selon le type de la catastrophe (tempête, incendie, tremblement de terre...), le trimestre ainsi que la localisation géographique. Il y recense le coût original de chaque catastrophe naturelle, ainsi que les coût normalisés c'est-à-dire les coûts qui prennent en compte l'inflation ainsi que le salaire moyen minimum. Notre jeu est constiué de `r nrow(aus_data)` lignes (les années où des catastrophes naturelles ont eu lieu )  surlesquels on mesure `r ncol(aus_data)` variables. Le tableau \@ref(tab:summaryAusData) résume les caractéristiques initiales de notre jeu de données : 
+
+```{r summaryAusData,echo=F}
+knitr::kable(summary(aus_data),align='c',caption="Résumé du jeu de données initial auscathist",booktabs=T)
+```
+
+\bigskip
+
+Le tableau \@ref(tab:headAusData) représente un extrait de notre jeu de données : 
+
+
+```{r headAusData, echo=F}
+knitr::kable(head(aus_data),align='c',caption="Un extrait de auscathist",booktabs=T)
+```
+
+Dans un premier temps, nous nous intéresserons à la variable OriginalCost que nous chercherons à expliquer en fonction de la localisation géographique, le trimestre ainsi que le type de catastrophe à travers deux modèles GLMs(Gamma et gaussien). Dans un second temps, nous essayerons d'expliquer la variable fréquence des catastrophes naturelles que nous rajouterons en fonction des mêmes variables explicatives(localisation, trimestre et type) à travers un modèle GLM Poisson. 
+
+# Exploration et nettoyage des données : 
+
+Bien qu'étant extrait d'une librairie R , notre jeu de données était loin d'être directement exploitable. D'une part, nous avions des données manquantes et des données qui n'étaient pas sous le bon format. Le tableau \@ref(tab:missingData) recense les données manquantes par classes.
+
+```{r missingData, echo=F}
+knitr::kable(sapply(aus_data,function(x) sum(is.na(x))),align='c',caption="Données manquantes",booktabs=T)
+```
+
+Ce qui peut être résumé par ce graphique : 
+
+```{r, echo=F}
+missmap(aus_data, main = "Missing values vs observed")
+```
+
+Nous supprimons donc la variable LastDay car elle contient énormément de données manquantes, nous supprimons également toutes les lignes qui contiennement des valeurs manquantes. 
+
+```{r, echo=F}
+aus_data$LastDay = NULL
+n = ncol(aus_data)
+for(i in 1:n){
+  aus_data = subset(aus_data, !is.na(aus_data[,i]))
+}
+```
+
+Nous nous retrouvons donc avec un jeu de données de `r nrow(aus_data)` lignes  et `r ncol(aus_data)` colonnes. 
+
+D'autre part et comme le montre cette carte réalisée sous le logiciel Tableau, notre variable Location n'est pas directement exploitable car elle contient `r nrow(aus_data)` classes ce qui représente énormement de classes pour notre GLM.
+
+![](Fréquence des sinistres en Australie de 1967 à 2010.png)
+
+Par conséquent, nous avons rajouté à la main une variable State qui correspond à l'état où la catastrophe naturelle a été observée. 
+
+
+```{r, echo=F}
+#Pour exécuter le code, j'ai inséré le chemin du fichier sur mon pc, vous pourriez utiliser file.choose() 
+aus_data_states = read.csv2("~/3A/cours/Assurance_Non_Vie/Australian_Natural_Catastrophes/data/aus_data_states.csv", sep = ",")
+aus_data_states$Quarter = factor(aus_data_states$Quarter)
+aus_data_states$OriginalCost = as.numeric(aus_data_states$OriginalCost)
+aus_data_states$X = NULL
+
+```
+
+Au final, nous nous retrouvons avec ce jeu de données directement exploitable cette fois. 
+
+```{r, echo=F}
+missmap(aus_data_states, main = "Missing values vs observed")
+```
+
+Finalement, nos variables explicatives Quarter, State et Type sont réparties ainsi :
+
+**Quarter: **
+
+```{r, echo=F}
+levels(aus_data_states$Quarter)
+```
+
+**State : **
+
+```{r, echo=F}
+levels(aus_data_states$State)
+```
+
+**Type: ** 
+
+```{r, echo=F}
+levels(aus_data_states$Type)
+```
+
+
+
+# GLM Gamma et Gaussien 
+
+```{r, echo=F}
+ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
+ggplot(aus_data_states,aes(x=Type,y=OriginalCost))+geom_col()
+ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x=element_text(angle=90))
+```
+
+# GLM Poisson 
+
+Du fait que notre jeu de données ne contient pas de variable fréquence des catastrophes naturelles, nous la fabriquons nous-même en comptant le nombre de sinistres par année. 
+
+```{r, echo=F}
+frequence = aggregate(aus_data_states$Type, by = aus_data_states["Year"], FUN = length)
+colnames(frequence) = c("Year","Frequence per year")
+aus_data = merge(aus_data_states, frequence )
+```
+
+Nous souhaitons donc visualiser comment se répartit la fréquence en fonction de nos variables explicatives 
+
+```{r, echo=F}
+ggplot(aus_data,aes(x=Quarter,y=`Frequence per year`))+geom_col()
+ggplot(aus_data,aes(x=Type,y=`Frequence per year`))+geom_col()
+ggplot(aus_data,aes(x=State,y=`Frequence per year`))+geom_col()+theme(axis.text.x=element_text(angle=90))
+```
+
+```{r, echo=F}
+fit_poisson = glm(formula = aus_data$`Frequence per year` ~ Quarter + State + Type , data = aus_data, family = poisson )
+summary(fit_poisson)
+```
+
+```{r}
+Anova(fit_poisson)
+```
+
+```{r}
+fit_poisson_2 = glm(formula = aus_data$`Frequence per year` ~ Quarter + Type , data = aus_data, family = poisson )
+summary(fit_poisson_2)
+```
+
+
+```{r, echo=F}
+knitr::kable(Anova(fit_poisson),align='c',caption="Sortie Anova poisson",booktabs=T)
+```
+
+
+
+```{r, echo=F}
+knitr::kable(anova(fit_poisson_2, test="Chisq"),align='c',caption="Sortie anova poisson",booktabs=T)
+```
+

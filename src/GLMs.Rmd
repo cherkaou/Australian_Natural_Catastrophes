@@ -49,10 +49,23 @@ Intercept : moyenne globale du modèle
 Aucune des classes significative par rapport à la classe de référence
 
 ```{r}
+library(car)
+Anova(fit)
+```
+
+```{r}
 anova(fit, test="Chisq")
 ```
 ANOVA : pour tester la significativité des variables par rapport au modèle
 Variables Type et Quarter par significatives au seuil de 5%
+
+```{r}
+fit = glm(formula = OriginalCost ~ Quarter + State , data = aus_data_states, family = Gamma())
+summary(fit)
+```
+
+
+
 
 ```{r}
 #183 observations
@@ -111,6 +124,13 @@ ggplot(aus_data,aes(x=State,y=aus_data$`Frequence per year`))+geom_col()+theme(a
 fit_poisson = glm(formula = aus_data$`Frequence per year` ~ Quarter + State + Type , data = aus_data, family = poisson )
 summary(fit_poisson)
 ```
+
+```{r}
+library(car)
+Anova(fit_poisson)
+```
+
+
 ```{r}
 anova(fit_poisson, test="Chisq")
 ```
