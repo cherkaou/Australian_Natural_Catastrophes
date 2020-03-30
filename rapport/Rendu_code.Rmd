@@ -1,0 +1,140 @@
+---
+title: Code du projet assurance non-vie
+subtitle: Analyse des données de catastrophes naturelles en Australie
+author: Yousra Cherkaoui Tangi - Lou Peltier 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+# Exploration et nettoyage des données : 
+
+```{r}
+library(CASdatasets)
+data("auscathist")
+aus_data = auscathist
+head(aus_data)
+```
+
+
+```{r}
+summary(aus_data)
+```
+
+Le nombre de na values 
+```{r}
+sapply(aus_data,function(x) sum(is.na(x)))
+```
+
+```{r}
+library(Amelia)
+missmap(aus_data, main = "Missing values vs observed")
+```
+
+```{r}
+aus_data$LastDay = NULL
+n = ncol(aus_data)
+for(i in 1:n){
+  aus_data = subset(aus_data, !is.na(aus_data[,i]))
+}
+dim(aus_data)
+
+```
+
+
+# GLMS : 
+
+## GLMs Gamma et gaussien : 
+
+On rajoute la variable State : 
+```{r}
+aus_data_states = read.csv2(file.choose(), sep = ",")
+aus_data_states$Quarter = factor(aus_data_states$Quarter)
+aus_data_states$OriginalCost = as.numeric(aus_data_states$OriginalCost)
+aus_data_states$X = NULL
+summary(aus_data)
+```
+
+Aperçu des données : 
+```{r}
+tail(aus_data_states)
+```
+
+```{r}
+levels(aus_data_states$Quarter)
+levels(aus_data_states$State)
+levels(aus_data_states$Type)
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
+ggplot(aus_data_states,aes(x=Type,y=OriginalCost))+geom_col()
+ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x=element_text(angle=90))
+```
+
+## GLM Gamma : 
+```{r}
+fit = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
+summary(fit)
+```
+
+```{r}
+library(car)
+Anova(fit)
+```
+
+```{r}
+anova(fit, test="Chisq")
+```
+
+```{r}
+qchisq(0.95,183-23)
+```
+
+
+```{r}
+fit_gaussian = glm(formula = OriginalCost ~ Quarter + State + Type, data = aus_data_states, family = gaussian())
+summary(fit_gaussian)
+```
+
+```{r}
+anova(fit_gaussian, test="Chisq")
+```
+
+## GLM Poisson : 
+
+### Création de la variable fréquence :
+
+```{r}
+frequence = aggregate(aus_data_states$Type, by = aus_data_states["Year"], FUN = length)
+colnames(frequence) = c("Year","Frequence per year")
+aus_data = merge(aus_data_states, frequence )
+head(aus_data)
+```
+
+```{r}
+library(ggplot2)
+ggplot(aus_data,aes(x=Quarter,y=aus_data$`Frequence per year`))+geom_col()
+ggplot(aus_data,aes(x=Type,y=aus_data$`Frequence per year`))+geom_col()
+ggplot(aus_data,aes(x=State,y=aus_data$`Frequence per year`))+geom_col()+theme(axis.text.x=element_text(angle=90))
+```
+
+### Choix variables et classes de références : 
+```{r}
+library(car)
+fit_poisson = glm(formula = aus_data$`Frequence per year` ~ Quarter + State + Type , data = aus_data, family = poisson )
+Anova(fit_poisson,test.statistic = "LR", type = 2)
+```
+
+```{r}
+aus_data$Type <- relevel(aus_data$Type, ref = "Tornado")
+aus_data$Quarter <- relevel(aus_data$Quarter, ref = "3")
+```
+
+### GLM poisson : 
+```{r}
+fit_poisson_2 = glm(formula = aus_data$`Frequence per year` ~ Quarter + Type , data = aus_data, family = poisson )
+summary(fit_poisson_2)
+```
+
