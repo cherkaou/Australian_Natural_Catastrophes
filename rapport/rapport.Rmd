@@ -33,7 +33,7 @@ data("auscathist")
 aus_data = auscathist
 ```
 
-Notre jeu de données est extrait de la librairie *CASdatasets* de R. Il s'agit de *auscathist* qui recense les catastrophes naturelles en Australie à partir de 1967 selon le type de la catastrophe (tempête, incendie, tremblement de terre...), le trimestre ainsi que la localisation géographique. Il y recense le coût original de chaque catastrophe naturelle, ainsi que les coût normalisés c'est-à-dire les coûts qui prennent en compte l'inflation ainsi que le salaire moyen minimum. Notre jeu est constiué de `r nrow(aus_data)` lignes (les années où des catastrophes naturelles ont eu lieu )  surlesquels on mesure `r ncol(aus_data)` variables. Le tableau \@ref(tab:summaryAusData) résume les caractéristiques initiales de notre jeu de données : 
+Notre jeu de données est extrait de la librairie *CASdatasets* de R. Il s'agit de *auscathist* qui recense les catastrophes naturelles en Australie à partir de 1967 selon le type de la catastrophe (tempête, incendie, tremblement de terre...), le trimestre ainsi que la localisation géographique. Il y recense le coût original de chaque catastrophe naturelle, ainsi que les coûts normalisés c'est-à-dire les coûts qui prennent en compte l'inflation ainsi que le salaire moyen minimum. Notre jeu de données est constiué de `r nrow(aus_data)` lignes (les années où des catastrophes naturelles ont eu lieu )  surlesquels on mesure `r ncol(aus_data)` variables. Le tableau \@ref(tab:summaryAusData) résume les caractéristiques initiales de notre jeu de données : 
 
 ```{r summaryAusData,echo=F}
 knitr::kable(summary(aus_data),align='c',caption="Résumé du jeu de données initial auscathist",booktabs=T)
@@ -43,16 +43,21 @@ knitr::kable(summary(aus_data),align='c',caption="Résumé du jeu de données in
 
 Le tableau \@ref(tab:headAusData) représente un extrait de notre jeu de données : 
 
+\bigskip
 
 ```{r headAusData, echo=F}
 knitr::kable(head(aus_data),align='c',caption="Un extrait de auscathist",booktabs=T)
 ```
 
-Dans un premier temps, nous nous intéresserons à la variable OriginalCost que nous chercherons à expliquer en fonction de la localisation géographique, le trimestre ainsi que le type de catastrophe à travers deux modèles GLMs(Gamma et gaussien). Dans un second temps, nous essayerons d'expliquer la variable fréquence des catastrophes naturelles que nous rajouterons en fonction des mêmes variables explicatives(localisation, trimestre et type) à travers un modèle GLM Poisson. 
+Dans un premier temps, nous nous intéressons à la variable OriginalCost que nous cherchons à expliquer en fonction de la localisation géographique, le trimestre ainsi que le type de catastrophe naturelle à travers deux modèles GLMs(Gamma et gaussien). Dans un second temps, nous essayerons d'expliquer la variable fréquence des catastrophes naturelles que nous rajouterons en fonction des mêmes variables explicatives(localisation, trimestre et type) à travers un modèle GLM Poisson. 
 
 # Exploration et nettoyage des données : 
 
-Bien qu'étant extrait d'une librairie R , notre jeu de données était loin d'être directement exploitable. D'une part, nous avions des données manquantes et des données qui n'étaient pas sous le bon format. Le tableau \@ref(tab:missingData) recense les données manquantes par classes.
+Bien qu'étant extrait d'une librairie R , notre jeu de données était loin d'être directement exploitable. D'une part, nous avions des données manquantes et des données qui n'étaient pas sous le bon format.
+
+\bigskip
+
+Le tableau \@ref(tab:missingData) recense les données manquantes par classes : 
 
 ```{r missingData, echo=F}
 knitr::kable(sapply(aus_data,function(x) sum(is.na(x))),align='c',caption="Données manquantes",booktabs=T)
@@ -64,7 +69,7 @@ Ce qui peut être résumé par ce graphique :
 missmap(aus_data, main = "Missing values vs observed")
 ```
 
-Nous supprimons donc la variable LastDay car elle contient énormément de données manquantes, nous supprimons également toutes les lignes qui contiennement des valeurs manquantes. 
+Nous supprimons donc la variable LastDay car elle contient un grand nombre de données manquantes, nous supprimons également toutes les lignes qui contiennent des valeurs manquantes. 
 
 ```{r, echo=F}
 aus_data$LastDay = NULL
@@ -76,11 +81,11 @@ for(i in 1:n){
 
 Nous nous retrouvons donc avec un jeu de données de `r nrow(aus_data)` lignes  et `r ncol(aus_data)` colonnes. 
 
-D'autre part et comme le montre cette carte réalisée sous le logiciel Tableau, notre variable Location n'est pas directement exploitable car elle contient `r nrow(aus_data)` classes ce qui représente énormement de classes pour notre GLM.
+D'autre part et comme le montre cette carte réalisée sous le logiciel Tableau, notre variable Location n'est pas directement exploitable car elle contient `r nrow(aus_data)` classes ce qui représente un grand nombre de classes pour notre GLM.
 
 ![](Fréquence des sinistres en Australie de 1967 à 2010.png)
 
-Par conséquent, nous avons rajouté à la main une variable State qui correspond à l'état où la catastrophe naturelle a été observée. 
+Par conséquent, nous avons rajouté à la main une variable State qui correspond à l'état où la catastrophe naturelle a été observée. Nous nous retrouvons donc avec 12 classes au lieu de 190. 
 
 
 ```{r, echo=F}
@@ -92,13 +97,15 @@ aus_data_states$X = NULL
 
 ```
 
-Au final, nous nous retrouvons avec ce jeu de données directement exploitable cette fois. 
+Au final, nous nous retrouvons avec ce jeu de données que nous pouvons directement exploiter cette fois. 
 
 ```{r, echo=F}
 missmap(aus_data_states, main = "Missing values vs observed")
 ```
 
-Finalement, nos variables explicatives Quarter, State et Type sont réparties ainsi :
+\bigskip
+Nos variables explicatives Quarter, State et Type contiennent chacune les classes suivantes :
+\bigskip
 
 **Quarter: **
 
@@ -119,18 +126,13 @@ levels(aus_data_states$Type)
 ```
 
 
-
-# GLM Gamma et Gaussien 
-
-```{r, echo=F}
-ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
-ggplot(aus_data_states,aes(x=Type,y=OriginalCost))+geom_col()
-ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x=element_text(angle=90))
-```
+# GLMs Gamma et Gaussien 
 
 # GLM Poisson 
 
-Du fait que notre jeu de données ne contient pas de variable fréquence des catastrophes naturelles, nous la fabriquons nous-même en comptant le nombre de sinistres par année. 
+## Répartition de la fréquence en fonction des variables explicatives 
+
+Notre jeu de données ne contient pas de variable *fréquence des catastrophes naturelles*. Par conséquent, nous la fabriquons nous-mêmes en comptant le nombre de sinistres par année. 
 
 ```{r, echo=F}
 frequence = aggregate(aus_data_states$Type, by = aus_data_states["Year"], FUN = length)
@@ -138,36 +140,72 @@ colnames(frequence) = c("Year","Frequence per year")
 aus_data = merge(aus_data_states, frequence )
 ```
 
-Nous souhaitons donc visualiser comment se répartit la fréquence en fonction de nos variables explicatives 
+Les graphiques \@ref(fig:freqByQuarter) , \@ref(fig:freqByType) ainsi que \@ref(fig:freqByState) nous montrent comment se répartit la fréquence des sinistres en fonction des variables explicatives que nous avons choisies.
 
-```{r, echo=F}
+```{r freqByQuarter,fig.cap="La fréquence des sinistres par trimestre", echo=F}
 ggplot(aus_data,aes(x=Quarter,y=`Frequence per year`))+geom_col()
+```
+
+
+
+```{r freqByType, fig.cap="La fréquence des sinistres par type", echo=F}
 ggplot(aus_data,aes(x=Type,y=`Frequence per year`))+geom_col()
+```
+
+
+```{r freqByState, fig.cap="La fréquence des sinistres par état", echo=F}
 ggplot(aus_data,aes(x=State,y=`Frequence per year`))+geom_col()+theme(axis.text.x=element_text(angle=90))
 ```
 
-```{r, echo=F}
+Nous remarquons alors que les premiers et derniers trimestres de l'année concentrent le plus de catastrophes naturelles, que les tempêtes sont les catastrophes naturelles les plus fréquentes et que l'état de New South Wales accumule le plus de catastrophes naturelles en Australie de 1967 à 2010. Ces observations vont influencer le choix de nos classes de références dans le paragraphe \@ref(choixVariables).
+
+\bigskip
+
+## Choix des variables {#choixVariables}
+
+Nous désirons d'abord tester la significativité de nos variables choisies afin de savoir si elles expliquent la fréquence des sinistres. Le tableau \@ref(tab:AnovaPoisson) présente les résultats du test d'analyse de variance (Anova du package car) : 
+
+```{r AnovaPoisson, echo=F}
 fit_poisson = glm(formula = aus_data$`Frequence per year` ~ Quarter + State + Type , data = aus_data, family = poisson )
-summary(fit_poisson)
+knitr::kable(Anova(fit_poisson,test.statistic = "LR", type = 2),align='c',caption="Sortie Anova poisson",booktabs=T)
 ```
 
-```{r}
-Anova(fit_poisson)
+Ce test nous montre que la variable State n'est pas significative car sa p-value est supérieure à 5%. Cela veut dire que la localisation géographique des catastrophes naturelles présentes dans notre jeu de données n'influe pas sur leur fréquence. Ce résultat est surprenant car le graphique \@ref(fig:freqByState) montre que l'état de New South Wales concentre une grande partie des catastrophes naturelles, nous pourrions donc penser qu'il y a plus de chances qu'une catastrophe naturelle ait lieu à New South Wales qu'autre part en Australie mais visiblement ce n'est pas le cas pour ce modèle GLM Poisson à trois variables.
+
+\bigskip
+
+Nous allons donc garder les variables explicatives Quarter et Type et essayer d'expliquer la fréquence des sinistres à partir d'un GLM Poisson. 
+
+Les tracés \@ref(fig:freqByQuarter) , \@ref(fig:freqByType) montrent qu'on observe le plus grand nombre des sinistres au premier et dernier trimestre de l'année et que les tempêtes sont les catastrophes naturelles les plus fréquentes en Australie.
+
+\bigskip
+
+Du fait que dans la sortie glm de R, les coefficients calculés le sont par rapport à une classe de référence, nous choisissons les classes pourlesquelles on observe les plus petites fréquences afin de repérer facilement les variables significatives dans la sortie R. Nous choisissons donc ces classes de références : le troisième trimestre pour Quarter et Tornado pour Type.
+
+```{r, echo=F}
+aus_data$Type <- relevel(aus_data$Type, ref = "Tornado")
+aus_data$Quarter <- relevel(aus_data$Quarter, ref = "3")
 ```
 
-```{r}
+
+
+## Résultats du GLM Poisson: 
+
+Notre GLM Poisson nous donne les résultats suivants : 
+
+```{r, echo=F}
 fit_poisson_2 = glm(formula = aus_data$`Frequence per year` ~ Quarter + Type , data = aus_data, family = poisson )
 summary(fit_poisson_2)
 ```
 
 
-```{r, echo=F}
-knitr::kable(Anova(fit_poisson),align='c',caption="Sortie Anova poisson",booktabs=T)
-```
+Nous remarquons que la Residual deviance est inférieure à la Null deviance, ce qui veut dire que le modèle enrichi de nos deux variables explicatives est meilleur que le modèle qui ne contient que la constante. 
 
+\bigskip
 
+La déviance de notre modèle est supérieure à `r qchisq(0.95,171) ` qui est le quantile d'une chi-deux à 95% à 171 degrés de liberté. Notre modèle n'est pas bien ajusté.
 
-```{r, echo=F}
-knitr::kable(anova(fit_poisson_2, test="Chisq"),align='c',caption="Sortie anova poisson",booktabs=T)
-```
+\bigskip
+Plusieurs de nos p-values sont supérieures à 0.05, cela veut dire que nos variables ne sont pas significatives par rapport aux classes de références choisies. Par exemple, seule la variable Quarter2 est significative au seuil 0.1 rapport à la variable Quarter3, ce qui est surprenant car le graphique \@ref(fig:freqByQuarter) montre qu'il y a un grand écart entre les trimestres 3 et 1. Nous remarquons également que les variables BushFire, Cyclone, Earthquake et Flood sont celles qui représentent le plus d'écart par rapport à Tornado. Nous nous attendions à ce que la variable Storm soit significative car son écart avec Tornado est important d'après \@ref(fig:freqByQuarter). Seule la variable Earthquake est donc significative par rapport à Tornado même si l'écart entre les deux n'est pas très important. 
+
 
