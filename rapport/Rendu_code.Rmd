@@ -75,21 +75,28 @@ ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x
 
 ## GLM Gamma : 
 ```{r}
-fit = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
-summary(fit)
+fit_gamma = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
+summary(fit_gamma)
 ```
+
+```{r}
+anova(fit_gamma, test="Chisq")
+```
+
 
 ```{r}
 library(car)
-Anova(fit)
+Anova(fit_gamma, test.statistic = "LR", type=2)
 ```
 
 ```{r}
-anova(fit, test="Chisq")
+fit_gamma_2 = glm(formula = OriginalCost ~ State , data = aus_data_states, family = Gamma())
+summary(fit_gamma_2)
 ```
 
+
 ```{r}
-qchisq(0.95,183-23)
+qchisq(0.95,171)
 ```
 
 
