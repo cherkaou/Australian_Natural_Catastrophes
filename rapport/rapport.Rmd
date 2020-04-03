@@ -22,7 +22,7 @@ library(magrittr) #pour utiliser l'opérateur pipe %>%
 options(knitr.table.format = "pandoc") 
 ```
 
-# Présentation des données
+# Présentation des données et de la problématique
 
 ```{r, include=F}
 library(CASdatasets)
@@ -48,6 +48,8 @@ Le tableau \@ref(tab:headAusData) représente un extrait de notre jeu de donnée
 ```{r headAusData, echo=F}
 knitr::kable(head(aus_data),align='c',caption="Un extrait de auscathist",booktabs=T)
 ```
+
+La problématique de ce projet est donc : Comment modéliser la sévérité et la fréquence des sinistres dus aux catastrophes naturelles en Australie ?
 
 Dans un premier temps, nous nous intéressons à la variable OriginalCost que nous cherchons à expliquer en fonction de la localisation géographique, le trimestre ainsi que le type de catastrophe naturelle à travers deux modèles GLMs(Gamma et gaussien). Dans un second temps, nous essayerons d'expliquer la variable fréquence des catastrophes naturelles que nous rajouterons en fonction des mêmes variables explicatives(localisation, trimestre et type) à travers un modèle GLM Poisson. 
 
@@ -125,12 +127,13 @@ levels(aus_data_states$State)
 levels(aus_data_states$Type)
 ```
 
+\bigskip
 
 # GLMs Gamma et Gaussien
 
 ## Répartition du coût des sinistres en fonction des variables explicatives 
 
-Nous souhaitons tout d'abord modéliser la sévérité des sinistres dû aux catastrophes naturelles en Autralie. Pour cela nous voulons expliquer la variable OriginalCost à l'aide de variables explicatives. Afin d'observer le comportement des variables traçons le côut du sinistre en fonction du trimestre \@ref(fig:costByQuarter), du type de catastrophe \@ref(fig:costByType) et de la localisation géographique \@ref(fig:costByState).
+Nous souhaitons tout d'abord modéliser la sévérité des sinistres dus aux catastrophes naturelles en Autralie. Pour cela nous voulons expliquer la variable OriginalCost à l'aide de variables explicatives. Afin d'observer le comportement des variables, traçons le côut du sinistre en fonction du trimestre \@ref(fig:costByQuarter), du type de catastrophe \@ref(fig:costByType) et de la localisation géographique \@ref(fig:costByState).
 
 ```{r, costByQuarter,fig.cap="Le coût des sinistres par trimestre",echo=FALSE}
 ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
@@ -145,27 +148,30 @@ ggplot(aus_data_states,aes(x=State,y=OriginalCost))+geom_col()+theme(axis.text.x
 
 Nous pouvons observer que les trimestres 1 et 4 ont une sévérité de sinistres élevée tandis que le troisième trimestre possède un coût relativement faible. Les tremblements de terre et les tornades se distinguent par un faible coût de sinistre et les états New South Wales et Queensland ont un coût bien plus élévé que les autres états.
 
+\bigskip
 
 ## Modélisation du côut des sinistres par un GLM Gamma
 
-On souhaite effectuer un GLM Gamma sur nos données pour étudier la variable OriginalCost en fonctions des variables explicatives. Nous supposons ainsi :
+On souhaite effectuer un GLM Gamma sur nos données pour étudier la variable OriginalCost en fonction des variables explicatives. Nous supposons ainsi :
 $$Y_i | X_i \sim \ Gamma \ et \ g(E(Y_i|X_i))=\frac{1}{E(Y_i | X_i)} = X_i^{'}\beta$$
 où :
+
   -$Y_i$ correspond au coût du sinistre de la catastrophe i, avec $i =1, …, 183$
+
   -$(X_{i,j})$ représentent les classes des variables explicatives exlicitées plus tôt
 
 ```{r, echo=FALSE}
 fit_gamma = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
-anova(fit_gamma, test="Chisq")
+knitr::kable(anova(fit_gamma, test="Chisq"),align='c',caption="Sortie anova Gamma",booktabs=T)
 ```
 
-Cette table d'analyse de la déviance est utile pour le sélection de modèles. Les p-values du test du rapport de vraisemblance indiquent que le modèle composé des variables Quarter et State est significatif au seuil de 5%. Néanmoins cette table ne permet pas de vérifier la significativité de chaque variable.
+Cette table d'analyse de la déviance est utile pour la sélection de modèles. Les p-values du test du rapport de vraisemblance indiquent que le modèle composé des variables Quarter et State est significatif au seuil de 5%. Néanmoins cette table ne permet pas de vérifier la significativité de chaque variable.
 
 \bigskip
 
 ## Choix des variables
 
-Nous allons ainsi tester la significativité de nos variables choisies afin de savoir si elles expliquent le coût des sinistresà l'aide de la fonction Anova du package car .Le tableau \@ref(tab:AnovaGamma) présente les résultats du test :
+Nous allons ainsi tester la significativité de nos variables choisies afin de savoir si elles expliquent le coût des sinistres à l'aide de la fonction Anova du package car .Le tableau \@ref(tab:AnovaGamma) présente les résultats du test :
 
 ```{r AnovaGamma, echo=FALSE}
 knitr::kable(Anova(fit_gamma, test.statistic = "LR", type=2),align='c',caption="Sortie Anova Gamma pour la significativité",booktabs=T)
@@ -179,7 +185,7 @@ Nous allons donc expliquer le coût des sinistres avec la variable State uniquem
 
 \bigskip
 
-## Résultats du GLM Gamma : 
+## Résultats du GLM Gamma
 
 Le GLM Gamma donne les résultats suivants :
 
@@ -189,6 +195,7 @@ summary(fit_gamma_2)
 ```
 
 La déviance du modèle correspond à la différence entre le modèle étudié et le modèle saturé qui correspond à un modèle plus général ayant autant de paramètres que de variables réponses, et qui a la même distribution et la même fonction de lien que le modèle étudié. La déviance nulle correspond quand à elle à un modèle avec un seul paramètre.
+
 Nous remarquons que la Residual deviance est inférieure à la Null deviance, ce qui veut dire que le modèle enrichi de la variable explicative State est meilleur que le modèle ne contenant que la constante.
 
 L'AIC est un critère de sélection de modèle, ici ce critère vaut 1658.
@@ -198,9 +205,72 @@ L'AIC est un critère de sélection de modèle, ici ce critère vaut 1658.
 La déviance de notre modèle est inférieure à `r qchisq(0.95,171) ` qui est le quantile d'une chi-deux à 95% à 171 degrés de liberté. L'ajustement de notre modèle semble donc pertinent.
 
 \bigskip
+
 La majorité des p-values sont supérieures à 0.05, cela veut dire que nos variables ne sont pas significatives par rapport aux classes de références choisies. Par exemple, seule la variable Victoria est significative au seuil 0.1 rapport à la variable New South Wales. En regardant le graphique \@ref(fig:costByState) nous pourrions néanmoins nous attendre à ce que les variables des états North, South East Asia et Tasmania par exemple soient significatives car elles présentent une plus grande disparité par rapport à l'état New South Wales.
 
+\bigskip
 
+## Modélisation du côut des sinistres par un GLM Gaussien
+
+Les résultats obtenus avec le GLM Gamma n'étant pas complètement satisfaisants nous voulons essayer de modéliser le coût des sinistres avec un GLM Gaussien pour comparer les résultats obtenus par les deux modèles et ainsi selectionner le plus pertinent. On suppose alors cette fois :
+$$
+Y_i|X_i \sim \mathcal{N}ormale
+\ et \
+g(E(Y_i|X_i))=E(Y_i|X_i)=X_i'\beta
+$$
+La fonction de lien choisie est l'identité.
+
+```{r, echo=FALSE}
+fit_gaussian = glm(formula = OriginalCost ~ Quarter + State + Type, data = aus_data_states, family = gaussian())
+knitr::kable(anova(fit_gaussian, test="Chisq"),align='c',caption="Sortie anova Gaussian",booktabs=T)
+```
+
+Le test du rapport de vraisemblance indique que le modèle composé des variables Quarter et State est significatif au seuil de 5%.
+
+\bigskip
+
+## Choix des variables
+
+Nous allons ainsi tester la significativité de nos variables choisies afin de savoir si elles expliquent le coût des sinistres à l'aide de la fonction Anova du package car .Le tableau \@ref(tab:AnovaGaussian) présente les résultats du test :
+
+```{r AnovaGaussian, echo=FALSE}
+knitr::kable(Anova(fit_gaussian, test.statistic = "LR", type=2),align='c',caption="Sortie Anova Gaussien pour la significativité",booktabs=T)
+```
+
+Le test indique que les variables Quarter et State sont significatives au seuil de 5%. On constate que pour ce modèle également la variable Type n'a pas d'influence sur le coût du sinistre engendré par la catastrophe naturelle, ce qui semble paradoxal.
+
+\bigskip
+
+Nous allons ainsi expliquer le coût des sinistres par un GLM Gaussian ayant les variables Quarter et State comme variables explicatives.
+
+\bigskip
+
+## Résultats du GLM Gaussien
+
+La modélisation donne le résultat suivant :
+
+```{r, echo=FALSE}
+fit_gaussian_2 = glm(formula = OriginalCost ~ Quarter + State , data = aus_data_states, family = gaussian())
+summary(fit_gaussian_2)
+```
+
+La Residual deviance est inférieure à la Null deviance, ce qui veut dire que le modèle enrichi des variables explicatives Quarter et State est meilleur que le modèle ne contenant que la constante, le modèle expliqué a donc un pouvoir explicatif.
+
+L'AIC est un critère de sélection de modèle, ici ce critère vaut 1669.8.
+
+\bigskip
+
+La déviance résiduelle de notre modèle est largement supérieur à `r qchisq(0.95,168) ` qui est le quantile d'une chi-deux à 95% à 168 degrés de liberté. Cela signifie que l'ajustement de notre modèle n'est pas pertinent.
+
+\bigskip
+
+La majorité des p-values sont supérieures à 0.05, seulement 4 classes ont une p-values inférieure au seuil de 5%. Cela veut dire que nos variables ne sont pas significatives par rapport aux classes de références choisies.
+
+\bigskip
+
+Ces différentes observations nous indiquent que la modélisation du GLM Gaussien de fonction de lien identité pour expliquer le coût des sinistres en fonction du trimestre et de l'Etat n'est pas pertinente et que nous devons rejeter ce modèle. De plus, l'AIC du GLM Gaussian est supérieur à l'AIC du GLM Gamma (1669.8>1658), indiquant que le modèle Gamma est plus pertinant que le modèle Gaussien.
+
+\bigskip
 
 # GLM Poisson 
 
@@ -254,7 +324,7 @@ Les tracés \@ref(fig:freqByQuarter) , \@ref(fig:freqByType) montrent qu'on obse
 
 \bigskip
 
-Du fait que dans la sortie glm de R, les coefficients calculés le sont par rapport à une classe de référence, nous choisissons les classes pourlesquelles on observe les plus petites fréquences afin de repérer facilement les variables significatives dans la sortie R. Nous choisissons donc ces classes de références : le troisième trimestre pour Quarter et Tornado pour Type.
+Du fait que dans la sortie glm de R, les coefficients calculés le sont par rapport à une classe de référence, nous choisissons les classes pour lesquelles on observe les plus petites fréquences afin de repérer facilement les variables significatives dans la sortie R. Nous choisissons donc ces classes de références : le troisième trimestre pour Quarter et Tornado pour Type.
 
 ```{r, echo=F}
 aus_data$Type <- relevel(aus_data$Type, ref = "Tornado")
@@ -263,7 +333,7 @@ aus_data$Quarter <- relevel(aus_data$Quarter, ref = "3")
 
 
 
-## Résultats du GLM Poisson: 
+## Résultats du GLM Poisson
 
 Notre GLM Poisson nous donne les résultats suivants : 
 
