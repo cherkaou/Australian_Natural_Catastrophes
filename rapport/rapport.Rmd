@@ -92,7 +92,7 @@ Par conséquent, nous avons rajouté à la main une variable State qui correspon
 
 ```{r, echo=F}
 #Pour exécuter le code, j'ai inséré le chemin du fichier sur mon pc, vous pourriez utiliser file.choose() 
-aus_data_states = read.csv2("C:/Users/pelti/OneDrive/Documents/GitHub/Australian_Natural_Catastrophes/data/aus_data_states.csv", sep = ",")
+aus_data_states = read.csv2("~/3A/cours/Assurance_Non_Vie/Australian_Natural_Catastrophes/data/aus_data_states.csv", sep = ",")
 aus_data_states$Quarter = factor(aus_data_states$Quarter)
 aus_data_states$OriginalCost = as.numeric(aus_data_states$OriginalCost)
 aus_data_states$X = NULL
@@ -133,7 +133,7 @@ levels(aus_data_states$Type)
 
 ## Répartition du coût des sinistres en fonction des variables explicatives 
 
-Nous souhaitons tout d'abord modéliser la sévérité des sinistres dus aux catastrophes naturelles en Autralie. Pour cela nous voulons expliquer la variable OriginalCost à l'aide de variables explicatives. Afin d'observer le comportement des variables, traçons le côut du sinistre en fonction du trimestre \@ref(fig:costByQuarter), du type de catastrophe \@ref(fig:costByType) et de la localisation géographique \@ref(fig:costByState).
+Nous souhaitons tout d'abord modéliser la sévérité des sinistres dus aux catastrophes naturelles en Autralie. Pour cela nous voulons expliquer la variable OriginalCost à l'aide de variables explicatives. Afin d'observer le comportement des variables, traçons le coût du sinistre en fonction du trimestre \@ref(fig:costByQuarter), du type de catastrophe \@ref(fig:costByType) et de la localisation géographique \@ref(fig:costByState).
 
 ```{r, costByQuarter,fig.cap="Le coût des sinistres par trimestre",echo=FALSE}
 ggplot(aus_data_states,aes(x=Quarter,y=OriginalCost))+geom_col()
@@ -150,15 +150,15 @@ Nous pouvons observer que les trimestres 1 et 4 ont une sévérité de sinistres
 
 \bigskip
 
-## Modélisation du côut des sinistres par un GLM Gamma
+## Modélisation du coût des sinistres par un GLM Gamma
 
 On souhaite effectuer un GLM Gamma sur nos données pour étudier la variable OriginalCost en fonction des variables explicatives. Nous supposons ainsi :
-$$Y_i | X_i \sim \ Gamma \ et \ g(E(Y_i|X_i))=\frac{1}{E(Y_i | X_i)} = X_i^{'}\beta$$
+$$Y_i | X_i \sim \ \Gamma \ et \ g(E(Y_i|X_i))=\frac{1}{E(Y_i | X_i)} = X_i^{'}\beta$$
 où :
 
   -$Y_i$ correspond au coût du sinistre de la catastrophe i, avec $i =1, …, 183$
 
-  -$(X_{i,j})$ représentent les classes des variables explicatives exlicitées plus tôt
+  -$(X_{i,j})$ représentent les classes des variables explicatives explicitées plus tôt
 
 ```{r, echo=FALSE}
 fit_gamma = glm(formula = OriginalCost ~ Quarter + State + Type , data = aus_data_states, family = Gamma())
@@ -210,7 +210,7 @@ La majorité des p-values sont supérieures à 0.05, cela veut dire que nos vari
 
 \bigskip
 
-## Modélisation du côut des sinistres par un GLM Gaussien
+## Modélisation du coût des sinistres par un GLM Gaussien
 
 Les résultats obtenus avec le GLM Gamma n'étant pas complètement satisfaisants nous voulons essayer de modéliser le coût des sinistres avec un GLM Gaussien pour comparer les résultats obtenus par les deux modèles et ainsi selectionner le plus pertinent. On suppose alors cette fois :
 $$
@@ -274,6 +274,15 @@ Ces différentes observations nous indiquent que la modélisation du GLM Gaussie
 
 # GLM Poisson 
 
+Nous supposons dans cette partie que
+
+$$Y_i | X_i \sim \ \mathcal{P} \ et \ g(E(Y_i|X_i))=\log({E(Y_i | X_i))} = X_i^{'}\beta$$
+où :
+
+  -$Y_i$ correspond à la fréquence du sinistre de la catastrophe i, avec $i =1, …, 183$
+
+  -$(X_{i,j})$ représentent les classes des variables explicatives explicitées plus tôt
+
 ## Répartition de la fréquence en fonction des variables explicatives 
 
 Notre jeu de données ne contient pas de variable *fréquence des catastrophes naturelles*. Par conséquent, nous la fabriquons nous-mêmes en comptant le nombre de sinistres par année. 
@@ -306,6 +315,7 @@ Nous remarquons alors que les premiers et derniers trimestres de l'année concen
 \bigskip
 
 ## Choix des variables {#choixVariables}
+
 
 Nous désirons d'abord tester la significativité de nos variables choisies afin de savoir si elles expliquent la fréquence des sinistres. Le tableau \@ref(tab:AnovaPoisson) présente les résultats du test d'analyse de variance (Anova du package car) : 
 
