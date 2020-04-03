@@ -108,6 +108,16 @@ summary(fit_gaussian)
 ```{r}
 anova(fit_gaussian, test="Chisq")
 ```
+```{r}
+Anova(fit_gaussian, test.statistic = "LR", type=2)
+```
+```{r}
+fit_gaussian_2 = glm(formula = OriginalCost ~ Quarter + State , data = aus_data_states, family = gaussian())
+summary(fit_gaussian_2)
+```
+```{r}
+qchisq(0.95,168)
+```
 
 ## GLM Poisson : 
 
