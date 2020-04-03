@@ -45,7 +45,7 @@ dim(aus_data)
 
 ## GLMs Gamma et gaussien : 
 
-On rajoute la variable State : 
+On rajoute la variable State (nous vous invitons à choisir le fichier aus_data_states.csv)
 ```{r}
 aus_data_states = read.csv2(file.choose(), sep = ",")
 aus_data_states$Quarter = factor(aus_data_states$Quarter)
